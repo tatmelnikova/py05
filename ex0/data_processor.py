@@ -116,7 +116,7 @@ def test_numeric() -> None:
         print("Trying to validate input 'Hello':", np.validate('Hello'))
         print("Test invalid ingestion of string" +
               "'foo' without prior validation:")
-        np.ingest('foo')  # type: ignore[arg-type]
+        np.ingest('foo')
     except Exception as e:
         print("Got exception:", e)
     try:
@@ -142,8 +142,10 @@ def test_text() -> None:
         print("Exctracting 1 value...")
         out = tp.output()
         print(f"Text value {out[0]}: {out[1]}")
+        print("Testing invalid ingestion of number 42:")
+        tp.ingest(42)
     except Exception as e:
-        print("Got exception in TextProcessor", e)
+        print("Got exception in TextProcessor:", e)
 
 
 def test_log() -> None:
@@ -161,8 +163,10 @@ def test_log() -> None:
         for x in range(2):
             out = lp.output()
             print(f"Log entry {out[0]}: {out[1]}")
+        print("Testing invalid ingestion of number 42:")
+        lp.ingest(42)
     except Exception as e:
-        print("Got exception in LogProcessor", e)
+        print("Got exception in LogProcessor:", e)
 
 
 def main() -> None:
