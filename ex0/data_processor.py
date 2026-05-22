@@ -6,8 +6,10 @@ from typing import Any
 
 
 class DataProcessor(ABC):
-    _storage: list[tuple[int, str]] = list()
-    _counter: int = 0
+    def __init__(self) -> None:
+        super().__init__()
+        self._counter = 0
+        self._storage: list[tuple[int, str]] = list()
 
     @abstractmethod
     def validate(self,  data: Any) -> bool:
@@ -35,8 +37,13 @@ class TextProcessor(DataProcessor):
 
     def ingest(self, data: str | list[str]) -> None:
         if self.validate(data):
-            self._storage.append((self._counter, str(data)))
-            self._counter += 1
+            if isinstance(data, list):
+                for item in data:
+                    self._storage.append((self._counter, str(item)))
+                    self._counter += 1
+            else:
+                self._storage.append((self._counter, str(data)))
+                self._counter += 1
         else:
             raise Exception("Improper text data")
 
@@ -65,8 +72,15 @@ class LogProcessor(DataProcessor):
 
     def ingest(self, data: list[dict[str, str]] | dict[str, str]) -> None:
         if self.validate(data):
-            self._storage.append((self._counter, str(data)))
-            self._counter += 1
+            if isinstance(data, list):
+                for item in data:
+                    str_val = ": ".join(f"{v}" for v in item.values())
+                    self._storage.append((self._counter, str_val))
+                    self._counter += 1
+            else:
+                str_val = ": ".join(f"{v}" for v in data.values())
+                self._storage.append((self._counter, str_val))
+                self._counter += 1
         else:
             raise Exception("Improper log data")
 
@@ -83,56 +97,82 @@ class NumericProcessor(DataProcessor):
 
     def ingest(self, data: int | float | list[int | float]) -> None:
         if self.validate(data):
-            self._storage.append((self._counter, str(data)))
-            self._counter += 1
+            if isinstance(data, list):
+                for item in data:
+                    self._storage.append((self._counter, str(item)))
+                    self._counter += 1
+            else:
+                self._storage.append((self._counter, str(data)))
+                self._counter += 1
         else:
             raise Exception("Improper numeric data")
 
 
-def main() -> None:
+def test_numeric() -> None:
+    print("Testing Numeric Processor...")
     np = NumericProcessor()
-    lp = LogProcessor()
+    try:
+        print("Trying to validate input '42':", np.validate(42))
+        print("Trying to validate input 'Hello':", np.validate('Hello'))
+        print("Test invalid ingestion of string" +
+              "'foo' without prior validation:")
+        np.ingest('foo')  # type: ignore[arg-type]
+    except Exception as e:
+        print("Got exception:", e)
+    try:
+        num_list: list[int | float] = [1, 2, 3, 4, 5]
+        print(f"Processing data: {num_list}")
+        np.ingest(num_list)
+        print("Extracting 3 values...")
+        for x in range(3):
+            out = np.output()
+            print(f"Numeric value {out[0]}: {out[1]}")
+    except Exception as e:
+        print("Got exception processing list", e)
+
+
+def test_text() -> None:
+    print("Testing Text Processor...")
     tp = TextProcessor()
     try:
-        print("Validate int:", np.validate(5))
-        print("Validate float:", np.validate(2.1))
-        print("Validate list of ints and floats:", np.validate([1, 0, 2.5]))
-        print("Validate string:", np.validate("abc"))
-        print("Validate list of int and str:", np.validate(["1", "abc"]))
-        print("Validate None:", np.validate(None))
-        print("========================================================")
+        print("Trying to validate input '42':", tp.validate(42))
+        str_list = ['Hello', 'Nexus', 'World']
+        print(f"Processing data: {str_list}")
+        tp.ingest(str_list)
+        print("Exctracting 1 value...")
+        out = tp.output()
+        print(f"Text value {out[0]}: {out[1]}")
+    except Exception as e:
+        print("Got exception in TextProcessor", e)
+
+
+def test_log() -> None:
+    print("Testing Log Processor...")
+    lp = LogProcessor()
+    try:
+        print("Trying to validate input 'Hello':", lp.validate('Hello'))
         list_of_dicts = [{'log_level': 'NOTICE',
                          'log_message': 'Connection to server'},
                          {'log_level': 'ERROR',
-                          'log_message': 'Unauthorized access!!'}]
-        str_dict = {'log_level': 'NOTICE',
-                    'log_message': 'Connection to server'}
-        hello = "Hello"
-        print("Validate log list_of_dicts", lp.validate(list_of_dicts))
-        print("Validate str_dict", lp.validate(str_dict))
-        print("Validate log hello", lp.validate(hello))
-        np.ingest("abc")  # type: ignore[arg-type]
-        print("=========================================================")
-        print("Validate text 42", tp.validate(42))
-        str_list = ['Hello', 'Nexus', 'World']
-        print("Validate text list", tp.validate(str_list))
-        tp.ingest(str_list)
-        tp.output()
-        tp.output()
+                         'log_message': 'Unauthorized access!!'}]
+        print("Processing data:", list_of_dicts)
+        lp.ingest(list_of_dicts)
+        print("Extracting 2 values...")
+        for x in range(2):
+            out = lp.output()
+            print(f"Log entry {out[0]}: {out[1]}")
     except Exception as e:
-        print("Got exception:", e)
-    np.ingest(1)
-    np.ingest(0.5)
-    np.ingest([1, 2, 3, 4])
-    try:
-        print(np.output())
-        print(np.output())
-        print(np.output())
-        print(np.output())
-    except Exception as e:
-        print("Got exception in output", e)
+        print("Got exception in LogProcessor", e)
 
+
+def main() -> None:
+    print("=== Code Nexus - Data Processor ===")
     print()
+    test_numeric()
+    print()
+    test_text()
+    print()
+    test_log()
 
 
 if __name__ == "__main__":
